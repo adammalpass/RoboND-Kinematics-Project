@@ -43,8 +43,8 @@ def handle_calculate_IK(req):
 
       
             # Modified DH params
-            q2 = q2 - pi / 2.
-            q7 = 0
+            #q2 = q2 - pi / 2.
+            #q7 = 0
 
             
             # Define Modified DH Transformation matrix
@@ -132,7 +132,7 @@ def handle_calculate_IK(req):
             R_corr = simplify(R_z * R_y)
 
             #calculate corrected transform from base to end effector
-            T_total = simplify(T6_7 * R_corr)
+            T_total = simplify(T0_7 * R_corr)
 
 
             
