@@ -114,10 +114,31 @@ def handle_calculate_IK(req):
             T0_7 = simplify(T0_1 * T1_2 * T2_3 * T3_4 * T4_5 * T5_6 * T6_7)
 
 
+            #Correction for orientation difference between defintion of gripper link URDF v DH
+            
+            #first rotate around z-axis by pi
+            R_z = Matrix([[             cos(pi),            -sin(pi),            0,              0],
+               [                        sin(pi),            cos(pi),             0,              0],
+               [                        0,                  0,                   1,              0],
+               [                        0,                  0,                   0,              1]])
+
+            #then rotate around y-axis by -pi/2
+            R_y = Matrix([[             cos(-pi/2),         0,                   sin(-pi/2),     0],
+               [                        0,                  1,                   0,              0],
+               [                        -sin(-pi/2),        0,                   cos(-pi/2),     0],
+               [                        0,                  0,                   0,              1]])
+
+            #calculate total correction factor
+            R_corr = simplify(R_z * R_y)
+
+            #calculate corrected transform from base to end effector
+            T_total = simplify(T6_7 * R_corr)
+
+
             
             # Extract end-effector position and orientation from request
-	    # px,py,pz = end-effector position
-	    # roll, pitch, yaw = end-effector orientation
+	        # px,py,pz = end-effector position
+	        # roll, pitch, yaw = end-effector orientation
             px = req.poses[x].position.x
             py = req.poses[x].position.y
             pz = req.poses[x].position.z
