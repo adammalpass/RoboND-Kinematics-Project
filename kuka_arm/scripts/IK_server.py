@@ -237,6 +237,19 @@ def handle_calculate_IK(req):
             b1 = atan2(J5[2]-J2[2], sqrt((J5[0]-J2[0])**2 + (J5[1]-J2[1])**2))
             theta2 = pi / 2 - b2 - b1
 
+            ######################  2) Calculate EE orientation ######################################
+
+            ######################  2.a) Calculate R0_3  ############################################
+
+            T0_3 = simplify(T0_1 * T1_2 * T2_3)
+
+            # Extract rotational component of transform matrix
+            R0_3 = T0_3[0:3, 0:3]
+
+            # Evaluate with calculated q1, q2 & q3
+            R0_3_num = R0_3.evalf(subs={q1:theta1, q2:theta2, q3:theta3}))
+            rospy.loginfo("R0_3_num": R0_3_num)
+
 		
             theta4 = 0
             theta5 = 0
