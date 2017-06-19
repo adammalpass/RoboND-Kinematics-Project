@@ -150,9 +150,9 @@ def handle_calculate_IK(req):
 
             J5__0 = [1.85, 0, 1.946]
 
-            # 1) First calculate Wrist Centre (WC)
+            ########################## 1) First calculate Wrist Centre (WC) #################################
 
-            # 1.a) Construct R0_6 based on target roll, pitch and yaw angles of end-effector
+            ############ 1.a) Construct R0_6 based on target roll, pitch and yaw angles of end-effector ######
 
             R_roll = Matrix([[ 1,              0,        0],
                           [ 0,        cos(roll), -sin(roll)],
@@ -172,6 +172,9 @@ def handle_calculate_IK(req):
             #print(R0_6.evalf(subs={roll:0, yaw:0, pitch:0}))
 
 
+            #############   1.b) Calculate wrist centre (WC) based on ###################################
+            #############   translation along z-axis from EE location ####################################
+
             P_EE = Matrix([[px],[py],[pz]])
             #P_EE = Matrix([[2.153],[0],[1.946]])
             #P_EE = Matrix([[-0.18685],[2.1447],[1.9465]])
@@ -183,6 +186,8 @@ def handle_calculate_IK(req):
             
             J5 = P_WC
             #J5 = [1.79505, 1.84825, 0.3094]   #q1 = 0.8, q2 = 1.1, q3 = -0.4
+
+            ################################### 1.c) Calculate theta1  ######################################
 
             theta1 = atan2(J5[1], J5[0])
             #print("theta1",theta1)
@@ -208,6 +213,9 @@ def handle_calculate_IK(req):
             #print("L2_5", L2_5)
             #print("L3_5", L3_5__0)
 
+
+            ############################### 1.d) Calculate theta 3 ###################################
+
             #D = cos(theta)
             D = (L2_5**2 - L2_3__0**2 - L3_5__0**2) / -(2 * L2_3__0 * L3_5__0)
             #print("D", D)
@@ -220,6 +228,7 @@ def handle_calculate_IK(req):
             #print("theta3", theta3.evalf())
             #print("q3_2", q3_2.evalf())
 
+            ########################## 1.e) Calculate theta 2 #####################################
 
             #q2 = atan2(L2_5_Z, L2_5_X) - atan2(L3_5__0 * sin(pi - q3_internal), L2_3__0 + L3_5__0 * cos(pi - q3_internal))
             m1 = L3_5__0 * sin(theta3_internal)
