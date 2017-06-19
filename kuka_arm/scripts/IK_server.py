@@ -149,13 +149,95 @@ def handle_calculate_IK(req):
      
             # Calculate joint angles using Geometric IK method
 
-		
+            J5__0 = [1.85, 0, 1.946]
 
+            # 1) First calculate Wrist Centre (WC)
+
+            # 1.a) Construct R0_6 based on target roll, pitch and yaw angles of end-effector
+
+            R_roll = Matrix([[ 1,              0,        0],
+                          [ 0,        cos(roll), -sin(roll)],
+                          [ 0,        sin(roll),  cos(roll)]])
+
+            R_pitch = Matrix([[ cos(pitch),        0,  sin(pitch)],
+                          [       0,        1,        0],
+                          [-sin(pitch),        0,  cos(pitch)]])
+
+            R_yaw = Matrix([[ cos(yaw), -sin(yaw),        0],
+                          [ sin(yaw),  cos(yaw),        0],
+                          [ 0,              0,        1]])
+
+            R0_6 = simplify(R_roll * R_pitch * R_yaw)
+
+            print("R0_6")
+            print(R0_6.evalf(subs={roll:0, yaw:0, pitch:0}))
+
+
+            P_EE = Matrix([[px],[py],[pz]])
+            #P_EE = Matrix([[2.153],[0],[1.946]])
+            #P_EE = Matrix([[-0.18685],[2.1447],[1.9465]])
+
+            P_WC = simplify(P_EE - 0.303 * R0_6[0:3, 0:3] * Matrix([[0],[0],[1]]))
+            print("P_WC")
+            print(P_WC.evalf(subs={roll:0, yaw:0, pitch:0}))
+
+            
+            J5 = P_WC
+            #J5 = [1.79505, 1.84825, 0.3094]   #q1 = 0.8, q2 = 1.1, q3 = -0.4
+
+            theta1 = atan2(J5[1], J5[0])
+            print("theta1",theta1)
+
+            J2__0 = [0.35, 0, 0.75]
+            J3__0 = [0.35, 0, 2]
+            J5__0 = [1.85, 0, 1.946]
+
+            J2 = [J2__0[0] * cos(theta1), J2__0[0] * sin(theta1), J2__0[2]]
+            #print("J2", J2)
+
+            L2_5_X = J5[0] - J2[0]
+            L2_5_Y = J5[1] - J2[1]
+            L2_5_Z = J5[2] - J2[2]
+            L2_5 = sqrt(L2_5_X**2 + L2_5_Y**2 + L2_5_Z**2)
+
+            L2_3__0 = 1.25
+
+            L3_5_X__0 = J5__0[0] - J3__0[0]
+            L3_5_Z__0 = J5__0[2] - J3__0[2]
+            L3_5__0 = sqrt(L3_5_X__0**2 + L3_5_Z__0**2)
+
+            #print("L2_5", L2_5)
+            #print("L3_5", L3_5__0)
+
+            #D = cos(theta)
+            D = (L2_5**2 - L2_3__0**2 - L3_5__0**2) / -(2 * L2_3__0 * L3_5__0)
+            #print("D", D)
+
+            theta3_internal = atan2(sqrt(1-D**2), D)
+            theta3 = pi / 2 - (atan2(sqrt(1-D**2), D) - atan2(L3_5_Z__0, L3_5_X__0))
+            theta3_2 = pi / 2 - (atan2(-sqrt(1-D**2), D) - atan2(L3_5_Z__0, L3_5_X__0))
+            #q3_1 = atan2(sqrt(1-D**2), D)
+            #q3_2 = atan2(-sqrt(1-D**2), D) 
+            print("theta3", theta3.evalf())
+            #print("q3_2", q3_2.evalf())
+
+
+            #q2 = atan2(L2_5_Z, L2_5_X) - atan2(L3_5__0 * sin(pi - q3_internal), L2_3__0 + L3_5__0 * cos(pi - q3_internal))
+            m1 = L3_5__0 * sin(theta3_internal)
+            m2 = L2_3__0 - L3_5__0 * cos(theta3_internal)
+            b2 = atan2(m1,m2)
+            b1 = atan2(J5[2]-J2[2], sqrt((J5[0]-J2[0])**2 + (J5[1]-J2[1])**2))
+            theta2 = pi / 2 - b2 - b1
+
+		
+            theta4 = 0
+            theta5 = 0
+            theta6 = 0
 
             # Populate response for the IK request
             # In the next line replace theta1,theta2...,theta6 by your joint angle variables
-	    joint_trajectory_point.positions = [q1, q2, q3, q4, q5, q6]
-	    joint_trajectory_list.append(joint_trajectory_point)
+	        joint_trajectory_point.positions = [theta1, theta2, theta3, theta4, theta5, theta6]
+	        joint_trajectory_list.append(joint_trajectory_point)
 
         rospy.loginfo("length of Joint Trajectory List: %s" % len(joint_trajectory_list))
         return CalculateIKResponse(joint_trajectory_list)
