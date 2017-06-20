@@ -250,10 +250,15 @@ def handle_calculate_IK(req):
             R0_3_num = R0_3.evalf(subs={q1:theta1, q2:theta2, q3:theta3})
             #rospy.loginfo("R0_3_num", R0_3_num)
 
+            #calculate inverse of R0_3
+            R0_3_num_inv = R0_3_num ** -1
+
+            R3_6 = R0_3_num_inv * R0_6
+
 		
-            theta4 = 0
-            theta5 = 0
-            theta6 = 0
+            theta6 = atan2(R3_6[1,0],R3_6[0,0]) # rotation about Z-axis
+            theta5 = atan2(-R3_6[2,0], sqrt(R3_6[0,0]*R3_6[0,0]+R3_6[1,0]*R3_6[1,0])) # rotation about Y-axis
+            theta4 = atan2(R3_6[2,1],R3_6[2,2]) # rotation about X-axis
 
             # Populate response for the IK request
             # In the next line replace theta1,theta2...,theta6 by your joint angle variables
