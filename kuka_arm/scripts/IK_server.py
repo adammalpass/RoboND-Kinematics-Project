@@ -248,7 +248,7 @@ def handle_calculate_IK(req):
 
             # Evaluate with calculated q1, q2 & q3
             R0_3_num = R0_3.evalf(subs={q1:theta1, q2:theta2, q3:theta3})
-            rospy.loginfo("R0_3_num", R0_3_num)
+            #rospy.loginfo("R0_3_num", R0_3_num)
 
 		
             theta4 = 0
