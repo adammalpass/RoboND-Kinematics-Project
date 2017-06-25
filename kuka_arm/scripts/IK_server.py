@@ -108,7 +108,7 @@ def handle_calculate_IK(req):
 
 
         # Transform from base link to end effector
-        #T0_7 = simplify(T0_1 * T1_2 * T2_3 * T3_4 * T4_5 * T5_6 * T6_7)
+        T0_7 = simplify(T0_1 * T1_2 * T2_3 * T3_4 * T4_5 * T5_6 * T6_7)
 
 
         #Correction for orientation difference between defintion of gripper link URDF v DH
@@ -130,6 +130,11 @@ def handle_calculate_IK(req):
 
         #calculate corrected transform from base to end effector
         #T_total = simplify(T0_7 * R_corr)
+
+        T0_3 = simplify(T0_1 * T1_2 * T2_3)
+
+        # Extract rotational component of transform matrix
+        R0_3 = T0_3[0:3, 0:3]
 
         for x in xrange(0, len(req.poses)):
             # IK code starts here
@@ -240,11 +245,6 @@ def handle_calculate_IK(req):
             ######################  2) Calculate EE orientation ######################################
 
             ######################  2.a) Calculate R0_3  ############################################
-
-            T0_3 = simplify(T0_1 * T1_2 * T2_3)
-
-            # Extract rotational component of transform matrix
-            R0_3 = T0_3[0:3, 0:3]
 
             # Evaluate with calculated q1, q2 & q3
             R0_3_num = R0_3.evalf(subs={q1:theta1, q2:theta2, q3:theta3})
