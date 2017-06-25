@@ -184,7 +184,7 @@ def handle_calculate_IK(req):
             #P_EE = Matrix([[2.153],[0],[1.946]])
             #P_EE = Matrix([[-0.18685],[2.1447],[1.9465]])
 
-            P_WC = simplify(P_EE - 0.303 * R0_6[0:3, 0:3] * Matrix([[0],[0],[1]]))
+            P_WC = simplify(P_EE - 0.303 * R0_6 * Matrix([[1],[0],[0]]))
             #print("P_WC")
             #print(P_WC.evalf(subs={roll:0, yaw:0, pitch:0}))
 
@@ -264,6 +264,14 @@ def handle_calculate_IK(req):
             # In the next line replace theta1,theta2...,theta6 by your joint angle variables
             joint_trajectory_point.positions = [theta1, theta2, theta3, theta4, theta5, theta6]
             joint_trajectory_list.append(joint_trajectory_point)
+
+            print("Requested poses")
+            print("x", px, "y", py, "z", pz)
+            print("roll", roll, "pitch", pitch, "yaw", yaw)
+
+            T0_7_num = T0_7.evalf(subs={q1:theta1, q2:theta2, q3:theta3, q4:theta4, q5:theta5, q6:theta6})
+            print("Forward Kinematics T0_7_num")
+            print(T0_7_num)
 
         rospy.loginfo("length of Joint Trajectory List: %s" % len(joint_trajectory_list))
         return CalculateIKResponse(joint_trajectory_list)
