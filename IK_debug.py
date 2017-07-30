@@ -198,7 +198,7 @@ def test_code(test_case):
                   [ 0,              0,        1]])
 
     #R0_6 = simplify(R_roll * R_pitch * R_yaw)
-    R0_6 = simplify(R_yaw * R_pitch * R_pitch)
+    R0_6 = simplify(R_yaw * R_pitch * R_roll)
     R0_6 = simplify(R0_6 * R_corr[0:3, 0:3])
 
     # Calculate joint angles using Geometric IK method
@@ -221,7 +221,7 @@ def test_code(test_case):
     #P_EE = Matrix([[2.153],[0],[1.946]])
     #P_EE = Matrix([[-0.18685],[2.1447],[1.9465]])
 
-    P_WC = P_EE - 0.303 * R0_6_num * Matrix([[1],[0],[0]])
+    P_WC = P_EE - 0.303 * R0_6_num * Matrix([[0],[0],[1]])
     #print("P_WC")
     #print(P_WC.evalf(subs={roll:0, yaw:0, pitch:0}))
 
@@ -297,9 +297,9 @@ def test_code(test_case):
     #theta5 = beta - pi/2
     #theta6 = gamma - pi/2
 
-    theta6 = atan2(R3_6[1,0],R3_6[0,0]) # rotation about Z-axis
+    theta4 = atan2(R3_6[1,0],R3_6[0,0]) # rotation about Z-axis
     theta5 = atan2(-R3_6[2,0], sqrt(R3_6[0,0]*R3_6[0,0]+R3_6[1,0]*R3_6[1,0])) # rotation about Y-axis
-    theta4 = atan2(R3_6[2,1],R3_6[2,2]) # rotation about X-axis
+    theta6 = atan2(R3_6[2,1],R3_6[2,2]) # rotation about X-axis
 
     ## Ending at: Populate response for the IK request
     ########################################################################################
@@ -324,7 +324,7 @@ def test_code(test_case):
 
     ## For error analysis please set the following variables of your WC location and EE location in the format of [x,y,z]
     #your_wc = [1,1,1] # <--- Load your calculated WC values in this array
-    your_wc = [T0_5_num.col(-1).row(0)[0], T0_5_num.col(-1).row(1)[0], T0_7_num.col(-1).row(2)[0]]
+    your_wc = [T0_5_num.col(-1).row(0)[0], T0_5_num.col(-1).row(1)[0], T0_5_num.col(-1).row(2)[0]]
     #your_ee = [1,1,1] # <--- Load your calculated end effector value from your forward kinematics
     your_ee = [T0_7_num.col(-1).row(0)[0], T0_7_num.col(-1).row(1)[0], T0_7_num.col(-1).row(2)[0]]
     ########################################################################################
