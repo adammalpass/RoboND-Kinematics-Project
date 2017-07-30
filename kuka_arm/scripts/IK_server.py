@@ -136,6 +136,26 @@ def handle_calculate_IK(req):
         # Extract rotational component of transform matrix
         R0_3 = T0_3[0:3, 0:3]
 
+
+        r, p, ya = symbols('r p ya')
+
+        R_roll = Matrix([[ 1,              0,        0],
+                      [ 0,        cos(r), -sin(r)],
+                      [ 0,        sin(r),  cos(r)]])
+
+        R_pitch = Matrix([[ cos(p),        0,  sin(p)],
+                      [       0,        1,        0],
+                      [-sin(p),        0,  cos(p)]])
+
+        R_yaw = Matrix([[ cos(ya), -sin(ya),        0],
+                      [ sin(ya),  cos(ya),        0],
+                      [ 0,              0,        1]])
+
+        #R0_6 = simplify(R_roll * R_pitch * R_yaw)
+        R0_6 = simplify(R_yaw * R_pitch * R_roll)
+        R0_6 = simplify(R0_6 * R_corr[0:3, 0:3])
+
+
         for x in xrange(0, len(req.poses)):
             # IK code starts here
             joint_trajectory_point = JointTrajectoryPoint()
@@ -159,22 +179,9 @@ def handle_calculate_IK(req):
 
             ############ 1.a) Construct R0_6 based on target roll, pitch and yaw angles of end-effector ######
 
-            R_roll = Matrix([[ 1,              0,        0],
-                          [ 0,        cos(roll), -sin(roll)],
-                          [ 0,        sin(roll),  cos(roll)]])
-
-            R_pitch = Matrix([[ cos(pitch),        0,  sin(pitch)],
-                          [       0,        1,        0],
-                          [-sin(pitch),        0,  cos(pitch)]])
-
-            R_yaw = Matrix([[ cos(yaw), -sin(yaw),        0],
-                          [ sin(yaw),  cos(yaw),        0],
-                          [ 0,              0,        1]])
-
-            R0_6 = simplify(R_roll * R_pitch * R_yaw)
-
             #print("R0_6")
             #print(R0_6.evalf(subs={roll:0, yaw:0, pitch:0}))
+            R0_6_num = R0_6.evalf(subs={r:roll, ya:yaw, p:pitch})
 
 
             #############   1.b) Calculate wrist centre (WC) based on ###################################
@@ -184,7 +191,7 @@ def handle_calculate_IK(req):
             #P_EE = Matrix([[2.153],[0],[1.946]])
             #P_EE = Matrix([[-0.18685],[2.1447],[1.9465]])
 
-            P_WC = simplify(P_EE - 0.303 * R0_6 * Matrix([[1],[0],[0]]))
+            P_WC = P_EE - 0.303 * R0_6_num * Matrix([[0],[0],[1]])
             #print("P_WC")
             #print(P_WC.evalf(subs={roll:0, yaw:0, pitch:0}))
 
@@ -226,8 +233,8 @@ def handle_calculate_IK(req):
             #print("D", D)
 
             theta3_internal = atan2(sqrt(1-D**2), D)
-            theta3 = pi / 2 - (atan2(sqrt(1-D**2), D) - atan2(L3_5_Z__0, L3_5_X__0))
-            theta3_2 = pi / 2 - (atan2(-sqrt(1-D**2), D) - atan2(L3_5_Z__0, L3_5_X__0))
+            theta3 = pi / 2 - theta3_internal + atan2(L3_5_Z__0, L3_5_X__0)
+            #theta3_2 = pi / 2 - (atan2(-sqrt(1-D**2), D) - atan2(L3_5_Z__0, L3_5_X__0))
             #q3_1 = atan2(sqrt(1-D**2), D)
             #q3_2 = atan2(-sqrt(1-D**2), D) 
             #print("theta3", theta3.evalf())
@@ -251,27 +258,36 @@ def handle_calculate_IK(req):
             #rospy.loginfo("R0_3_num", R0_3_num)
 
             #calculate inverse of R0_3
-            R0_3_num_inv = R0_3_num ** -1
+            #R0_3_num_inv = R0_3_num ** -1
+            R0_3_num_inv = R0_3_num.inv("LU")
 
-            R3_6 = R0_3_num_inv * R0_6
+            R3_6 = R0_3_num_inv * R0_6_num
 
-		
-            theta6 = atan2(R3_6[1,0],R3_6[0,0]) # rotation about Z-axis
-            theta5 = atan2(-R3_6[2,0], sqrt(R3_6[0,0]*R3_6[0,0]+R3_6[1,0]*R3_6[1,0])) # rotation about Y-axis
-            theta4 = atan2(R3_6[2,1],R3_6[2,2]) # rotation about X-axis
+            #alpha, beta, gamma = tf.transformations.euler_from_matrix(R3_6, axes = 'ryzx')
+            #theta4 = alpha
+            #theta5 = beta - pi/2
+            #theta6 = gamma - pi/2
+
+            #theta6 = atan2(R3_6[1,0],R3_6[0,0]) # rotation about Z-axis
+            #theta5 = atan2(-R3_6[2,0], sqrt(R3_6[0,0]*R3_6[0,0]+R3_6[1,0]*R3_6[1,0])) # rotation about Y-axis
+            #theta4 = atan2(R3_6[2,1],R3_6[2,2]) # rotation about X-axis
+
+            theta4 = atan2(R3_6[2,2], -R3_6[0,2])
+            theta5 = atan2(sqrt(R3_6[0,2]*R3_6[0,2] + R3_6[2,2]*R3_6[2,2]), R3_6[1,2])
+            theta6 = atan2(-R3_6[1,1], R3_6[1,0])
 
             # Populate response for the IK request
             # In the next line replace theta1,theta2...,theta6 by your joint angle variables
             joint_trajectory_point.positions = [theta1, theta2, theta3, theta4, theta5, theta6]
             joint_trajectory_list.append(joint_trajectory_point)
 
-            print("Requested poses")
-            print("x", px, "y", py, "z", pz)
-            print("roll", roll, "pitch", pitch, "yaw", yaw)
+            #print("Requested poses")
+            #print("x", px, "y", py, "z", pz)
+            #print("roll", roll, "pitch", pitch, "yaw", yaw)
 
-            T0_7_num = T0_7.evalf(subs={q1:theta1, q2:theta2, q3:theta3, q4:theta4, q5:theta5, q6:theta6})
-            print("Forward Kinematics T0_7_num")
-            print(T0_7_num)
+            #T0_7_num = T0_7.evalf(subs={q1:theta1, q2:theta2, q3:theta3, q4:theta4, q5:theta5, q6:theta6})
+            #print("Forward Kinematics T0_7_num")
+            #print(T0_7_num)
 
         rospy.loginfo("length of Joint Trajectory List: %s" % len(joint_trajectory_list))
         return CalculateIKResponse(joint_trajectory_list)
