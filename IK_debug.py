@@ -149,12 +149,15 @@ def test_code(test_case):
        [ sin(q7)*sin(alpha6), cos(q7)*sin(alpha6),  cos(alpha6),  cos(alpha6)*d7],
        [                   0,                   0,            0,               1]])
     
+    R3_6 = simplify(T3_4*T4_5*T5_6)[:3,:3]
+    print R3_6
+
     T6_7 = T6_7.subs(s)
 
     # Transform from base link to WC
     T0_5 = simplify(T0_1 * T1_2 * T2_3 * T3_4 * T4_5)
     # Transform from base link to end effector
-    T0_7 = simplify(T0_1 * T1_2 * T2_3 * T3_4 * T4_5 * T5_6 * T6_7)
+    #T0_7 = simplify(T0_1 * T1_2 * T2_3 * T3_4 * T4_5 * T5_6 * T6_7)
 
 
     #Correction for orientation difference between defintion of gripper link URDF v DH
@@ -178,6 +181,7 @@ def test_code(test_case):
     #T_total = simplify(T0_7 * R_corr)
 
     T0_3 = simplify(T0_1 * T1_2 * T2_3)
+    T0_7_corr = simplify(T0_1 * T1_2 * T2_3 * T3_4 * T4_5 * T5_6 * T6_7 * R_corr)
 
     # Extract rotational component of transform matrix
     R0_3 = T0_3[0:3, 0:3]
@@ -264,6 +268,7 @@ def test_code(test_case):
 
     theta3_internal = atan2(sqrt(1-D**2), D)
     theta3 = pi / 2 - theta3_internal + atan2(L3_5_Z__0, L3_5_X__0)
+    print("atan2", atan2(L3_5_Z__0, L3_5_X__0))
     #theta3_2 = pi / 2 - (atan2(-sqrt(1-D**2), D) - atan2(L3_5_Z__0, L3_5_X__0))
     #q3_1 = atan2(sqrt(1-D**2), D)
     #q3_2 = atan2(-sqrt(1-D**2), D) 
@@ -288,7 +293,8 @@ def test_code(test_case):
     #rospy.loginfo("R0_3_num", R0_3_num)
 
     #calculate inverse of R0_3
-    R0_3_num_inv = R0_3_num ** -1
+    #R0_3_num_inv = R0_3_num ** -1
+    R0_3_num_inv = R0_3_num.inv("LU")
 
     R3_6 = R0_3_num_inv * R0_6_num
 
@@ -297,9 +303,13 @@ def test_code(test_case):
     #theta5 = beta - pi/2
     #theta6 = gamma - pi/2
 
-    theta4 = atan2(R3_6[1,0],R3_6[0,0]) # rotation about Z-axis
-    theta5 = atan2(-R3_6[2,0], sqrt(R3_6[0,0]*R3_6[0,0]+R3_6[1,0]*R3_6[1,0])) # rotation about Y-axis
-    theta6 = atan2(R3_6[2,1],R3_6[2,2]) # rotation about X-axis
+    #theta4 = atan2(R3_6[1,0],R3_6[0,0]) # rotation about Z-axis
+    #theta5 = atan2(-R3_6[2,0], sqrt(R3_6[0,0]*R3_6[0,0]+R3_6[1,0]*R3_6[1,0])) # rotation about Y-axis
+    #theta6 = atan2(R3_6[2,1],R3_6[2,2]) # rotation about X-axis
+
+    theta4 = atan2(R3_6[2,2], -R3_6[0,2])
+    theta5 = atan2(sqrt(R3_6[0,2]*R3_6[0,2] + R3_6[2,2]*R3_6[2,2]), R3_6[1,2])
+    theta6 = atan2(-R3_6[1,1], R3_6[1,0])
 
     ## Ending at: Populate response for the IK request
     ########################################################################################
@@ -310,7 +320,7 @@ def test_code(test_case):
     ## (OPTIONAL) YOUR CODE HERE!
 
     T0_5_num = T0_5.evalf(subs={q1:theta1, q2:theta2, q3:theta3, q4:theta4, q5:theta5, q6:theta6})
-    T0_7_num = T0_7.evalf(subs={q1:theta1, q2:theta2, q3:theta3, q4:theta4, q5:theta5, q6:theta6})
+    T0_7_corr_num = T0_7_corr.evalf(subs={q1:theta1, q2:theta2, q3:theta3, q4:theta4, q5:theta5, q6:theta6})
     #print("Forward Kinematics T0_7_num")
     #print(T0_7_num)
     #print(T0_7_num.col(-1).row(0)[0])
@@ -324,9 +334,10 @@ def test_code(test_case):
 
     ## For error analysis please set the following variables of your WC location and EE location in the format of [x,y,z]
     #your_wc = [1,1,1] # <--- Load your calculated WC values in this array
-    your_wc = [T0_5_num.col(-1).row(0)[0], T0_5_num.col(-1).row(1)[0], T0_5_num.col(-1).row(2)[0]]
+    #your_wc = [T0_5_num.col(-1).row(0)[0], T0_5_num.col(-1).row(1)[0], T0_5_num.col(-1).row(2)[0]]
+    your_wc = [P_WC[0], P_WC[1], P_WC[2]]
     #your_ee = [1,1,1] # <--- Load your calculated end effector value from your forward kinematics
-    your_ee = [T0_7_num.col(-1).row(0)[0], T0_7_num.col(-1).row(1)[0], T0_7_num.col(-1).row(2)[0]]
+    your_ee = [T0_7_corr_num.col(-1).row(0)[0], T0_7_corr_num.col(-1).row(1)[0], T0_7_corr_num.col(-1).row(2)[0]]
     ########################################################################################
 
     ## Error analysis
